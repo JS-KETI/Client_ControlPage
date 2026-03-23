@@ -1,5 +1,6 @@
 import type { DeviceSummary } from '../types';
 import { getBatteryColor, formatBps } from '../utils/battery';
+import { MoqVideo } from './MoqVideo';
 
 interface Props {
   device: DeviceSummary;
@@ -19,9 +20,20 @@ export function DeviceCard({ device, index, onClick }: Props) {
         </span>
       </div>
       <div className="card-video">
-        <div className="video-placeholder">
-          <span>{device.displayName}</span>
-          <span className="resolution">{device.width}×{device.height} {device.fps}fps</span>
+        {device.relayUrl && device.broadcastPath ? (
+          <MoqVideo
+            relayUrl={device.relayUrl}
+            broadcastPath={device.broadcastPath}
+            className="video-container"
+          />
+        ) : (
+          <div className="video-placeholder">
+            <span>{device.displayName}</span>
+            <span className="resolution">{device.width}×{device.height} {device.fps}fps</span>
+            <span className="bps">{formatBps(device.publisherTxBps)}</span>
+          </div>
+        )}
+        <div className="video-overlay">
           <span className="bps">{formatBps(device.publisherTxBps)}</span>
         </div>
       </div>

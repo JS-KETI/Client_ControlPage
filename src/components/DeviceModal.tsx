@@ -1,5 +1,6 @@
 import type { DeviceSummary } from '../types';
 import { getBatteryColor, formatBps } from '../utils/battery';
+import { MoqVideo } from './MoqVideo';
 
 interface Props {
   device: DeviceSummary;
@@ -22,10 +23,18 @@ export function DeviceModal({ device, onClose }: Props) {
               <span>{device.location ?? '-'}</span>
               <span>{device.missionStatus === 'in_progress' ? '임무 수행 중' : '대기 중'}</span>
             </div>
-            <div className="video-placeholder large">
-              <span>{device.displayName}</span>
-              <span>{device.width}×{device.height} {device.fps}fps</span>
-            </div>
+            {device.relayUrl && device.broadcastPath ? (
+              <MoqVideo
+                relayUrl={device.relayUrl}
+                broadcastPath={device.broadcastPath}
+                className="video-container large"
+              />
+            ) : (
+              <div className="video-placeholder large">
+                <span>{device.displayName}</span>
+                <span>{device.width}×{device.height} {device.fps}fps</span>
+              </div>
+            )}
           </div>
           <div className="modal-detail">
             <h3>기기 정보</h3>

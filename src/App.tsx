@@ -4,7 +4,9 @@ import { useWebSocket } from './hooks/useWebSocket';
 import { VideoGrid } from './components/VideoGrid';
 import { DeviceModal } from './components/DeviceModal';
 import { LlmSidebar } from './components/LlmSidebar';
+import { WeatherPanel } from './components/WeatherPanel';
 import type { DeviceSummary } from './types';
+import '@moq/watch/element';
 import './App.css';
 
 const WS_URL = `ws://${window.location.host}/ws/monitoring`;
@@ -32,6 +34,7 @@ function App() {
           <button className="tab">히스토리</button>
           <button className="tab">설정</button>
         </nav>
+        <WeatherPanel />
         <div className="device-count">연결 기기: {deviceList.length}대</div>
       </header>
 
