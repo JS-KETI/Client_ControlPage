@@ -24,6 +24,7 @@ export function DeviceCard({ device, index, onClick }: Props) {
           <MoqVideo
             relayUrl={device.relayUrl}
             broadcastPath={device.broadcastPath}
+            deviceId={device.deviceId}
             className="video-container"
           />
         ) : (

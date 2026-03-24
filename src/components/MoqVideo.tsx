@@ -3,10 +3,11 @@ import { useEffect, useRef, memo } from 'react';
 interface Props {
   relayUrl: string;
   broadcastPath: string;
+  deviceId: string;
   className?: string;
 }
 
-export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, className }: Props) {
+export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, deviceId, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const moqWatchRef = useRef<HTMLElement | null>(null);
 
@@ -25,7 +26,6 @@ export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, classN
     moqWatch.setAttribute('jitter', '150');
     moqWatch.setAttribute('muted', '');
     moqWatch.setAttribute('volume', '0');
-    moqWatch.style.cssText = 'width:100%;height:100%;display:block;position:relative;overflow:hidden;';
 
     const video = document.createElement('video');
     video.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#000;display:block;';
@@ -33,20 +33,11 @@ export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, classN
     video.muted = true;
     video.playsInline = true;
     video.controls = false;
+    video.setAttribute('data-device-id', deviceId || broadcastPath.split('/')[0]);
 
     moqWatch.appendChild(video);
     container.appendChild(moqWatch);
     moqWatchRef.current = moqWatch;
-
-    // @moq/watch 내장 UI 요소 숨기기 (동적 생성되는 것 포함)
-    const observer = new MutationObserver(() => {
-      moqWatch.querySelectorAll(':not(video):not(style)').forEach(el => {
-        if (el !== video && el.tagName !== 'STYLE' && el.tagName !== 'SOURCE') {
-          (el as HTMLElement).style.display = 'none';
-        }
-      });
-    });
-    observer.observe(moqWatch, { childList: true, subtree: true });
 
     const tryPlay = () => {
       video.play().catch(() => {});
@@ -57,7 +48,6 @@ export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, classN
     console.log('[MoqVideo] url=', relayUrl, 'path=', broadcastPath);
 
     return () => {
-      observer.disconnect();
       document.removeEventListener('click', tryPlay);
       if (moqWatchRef.current) {
         moqWatchRef.current.remove();
