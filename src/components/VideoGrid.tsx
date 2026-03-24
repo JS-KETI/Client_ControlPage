@@ -13,21 +13,23 @@ export function VideoGrid({ devices, onDeviceClick }: Props) {
   const [page, setPage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(devices.length / GRID_SIZE));
   const pageDevices = devices.slice(page * GRID_SIZE, (page + 1) * GRID_SIZE);
+  const emptyCount = GRID_SIZE - pageDevices.length;
 
   return (
     <div className="video-grid-container">
       <div className="video-grid">
-        {Array.from({ length: GRID_SIZE }).map((_, i) => (
-          <div key={i} className="grid-cell">
-            {pageDevices[i] ? (
-              <DeviceCard
-                device={pageDevices[i]}
-                index={page * GRID_SIZE + i}
-                onClick={onDeviceClick}
-              />
-            ) : (
-              <div className="empty-cell" />
-            )}
+        {pageDevices.map((device, i) => (
+          <div key={device.deviceId} className="grid-cell">
+            <DeviceCard
+              device={device}
+              index={page * GRID_SIZE + i}
+              onClick={onDeviceClick}
+            />
+          </div>
+        ))}
+        {Array.from({ length: emptyCount }).map((_, i) => (
+          <div key={`empty-${page}-${i}`} className="grid-cell">
+            <div className="empty-cell" />
           </div>
         ))}
       </div>

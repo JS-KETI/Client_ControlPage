@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useDeviceStore } from './hooks/useDeviceStore';
 import { useWebSocket } from './hooks/useWebSocket';
 import { VideoGrid } from './components/VideoGrid';
