@@ -6,7 +6,6 @@ interface Props {
   className?: string;
 }
 
-// @moq/watch Web Component를 React에서 사용하기 위한 래퍼
 export function MoqVideo({ relayUrl, broadcastPath, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -14,18 +13,20 @@ export function MoqVideo({ relayUrl, broadcastPath, className }: Props) {
     const container = containerRef.current;
     if (!container) return;
 
-    // Web Component 생성
     const moqWatch = document.createElement('moq-watch');
     moqWatch.setAttribute('url', relayUrl);
-    moqWatch.setAttribute('path', broadcastPath);
+    moqWatch.setAttribute('name', broadcastPath);
 
     const canvas = document.createElement('canvas');
     canvas.style.width = '100%';
     canvas.style.height = '100%';
     canvas.style.objectFit = 'contain';
+    canvas.style.backgroundColor = '#000';
 
     moqWatch.appendChild(canvas);
     container.appendChild(moqWatch);
+
+    console.log('[MoqVideo] url=', relayUrl, 'path=', broadcastPath);
 
     return () => {
       container.innerHTML = '';
