@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useDeviceStore } from './hooks/useDeviceStore';
 import { useWebSocket } from './hooks/useWebSocket';
 import { VideoGrid } from './components/VideoGrid';
@@ -13,7 +13,8 @@ const WS_URL = `ws://${window.location.host}/ws/monitoring`;
 
 function App() {
   const { devices, handleSnapshot, handleUpsert, handleRemove } = useDeviceStore();
-  const [selectedDevice, setSelectedDevice] = useState<DeviceSummary | null>(null);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useWebSocket({
@@ -24,6 +25,17 @@ function App() {
   });
 
   const deviceList = useMemo(() => Array.from(devices.values()), [devices]);
+  const selectedDevice = selectedDeviceId ? devices.get(selectedDeviceId) : null;
+
+  const handleDeviceClick = (device: DeviceSummary) => {
+    setSelectedDeviceId(device.deviceId);
+    setModalVisible(true);
+  };
+
+  const handleModalClose = () => {
+    setModalVisible(false);
+    // selectedDeviceId를 유지하여 MoqVideo 연결 보존
+  };
 
   return (
     <div className="app">
@@ -39,11 +51,13 @@ function App() {
       </header>
 
       <main className="app-main">
-        <VideoGrid devices={deviceList} onDeviceClick={setSelectedDevice} />
+        <VideoGrid devices={deviceList} onDeviceClick={handleDeviceClick} />
       </main>
 
       {selectedDevice && (
-        <DeviceModal device={selectedDevice} onClose={() => setSelectedDevice(null)} />
+        <div style={{ display: modalVisible ? 'block' : 'none' }}>
+          <DeviceModal device={selectedDevice} onClose={handleModalClose} />
+        </div>
       )}
 
       <button className="fab" onClick={() => setSidebarOpen(true)}>
