@@ -14,7 +14,6 @@ export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, classN
     const container = containerRef.current;
     if (!container) return;
 
-    // 이미 생성된 moq-watch가 있으면 제거
     if (moqWatchRef.current) {
       moqWatchRef.current.remove();
       moqWatchRef.current = null;
@@ -26,21 +25,29 @@ export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, classN
     moqWatch.setAttribute('jitter', '150');
     moqWatch.setAttribute('muted', '');
     moqWatch.setAttribute('volume', '0');
+    moqWatch.style.cssText = 'width:100%;height:100%;display:block;position:relative;overflow:hidden;';
 
     const video = document.createElement('video');
-    video.style.width = '100%';
-    video.style.height = '100%';
-    video.style.objectFit = 'contain';
-    video.style.backgroundColor = '#000';
+    video.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#000;display:block;';
     video.autoplay = true;
     video.muted = true;
     video.playsInline = true;
+    video.controls = false;
 
     moqWatch.appendChild(video);
     container.appendChild(moqWatch);
     moqWatchRef.current = moqWatch;
 
-    // 자동재생 정책 우회: 사용자 상호작용 후 play 재시도
+    // @moq/watch 내장 UI 요소 숨기기 (동적 생성되는 것 포함)
+    const observer = new MutationObserver(() => {
+      moqWatch.querySelectorAll(':not(video):not(style)').forEach(el => {
+        if (el !== video && el.tagName !== 'STYLE' && el.tagName !== 'SOURCE') {
+          (el as HTMLElement).style.display = 'none';
+        }
+      });
+    });
+    observer.observe(moqWatch, { childList: true, subtree: true });
+
     const tryPlay = () => {
       video.play().catch(() => {});
       document.removeEventListener('click', tryPlay);
@@ -50,6 +57,8 @@ export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, classN
     console.log('[MoqVideo] url=', relayUrl, 'path=', broadcastPath);
 
     return () => {
+      observer.disconnect();
+      document.removeEventListener('click', tryPlay);
       if (moqWatchRef.current) {
         moqWatchRef.current.remove();
         moqWatchRef.current = null;
