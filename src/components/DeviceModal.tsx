@@ -27,6 +27,7 @@ export function DeviceModal({ device, onClose }: Props) {
               <MoqVideo
                 relayUrl={device.relayUrl}
                 broadcastPath={device.broadcastPath}
+                deviceId={device.deviceId}
                 className="video-container large"
               />
             ) : (
