@@ -150,7 +150,7 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
           onKeyDown={e => e.key === 'Enter' && sendMessage()}
           placeholder="명령을 입력하세요..."
         />
-        <button onClick={sendMessage} disabled={loading}>전송</button>
+        <button onClick={() => sendMessage()} disabled={loading}>전송</button>
       </div>
     </div>
   );
