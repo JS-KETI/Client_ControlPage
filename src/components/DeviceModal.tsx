@@ -15,7 +15,7 @@ export function DeviceModal({ device, onClose }: Props) {
         <button className="panel-close" onClick={onClose}>✕</button>
         <div className="panel-header">
           <span className="device-label">{device.deviceId}</span>
-          <span style={{ color: batteryColor }}>배터리 {device.battery ?? '-'}%</span>
+          <span style={{ color: batteryColor }}>배터리 {device.battery != null ? `${device.battery}%` : '-'}</span>
           <span className="bps">{formatBps(device.publisherTxBps)}</span>
         </div>
         <div className="panel-body">
@@ -33,7 +33,7 @@ export function DeviceModal({ device, onClose }: Props) {
           </dl>
           <h3>상태 정보</h3>
           <dl>
-            <dt>배터리</dt><dd style={{ color: batteryColor }}>{device.battery ?? '-'}%</dd>
+            <dt>배터리</dt><dd style={{ color: batteryColor }}>{device.battery != null ? `${device.battery}%` : '-'}</dd>
             <dt>위치</dt><dd>{device.location ?? '-'}</dd>
             <dt>임무</dt><dd>{device.missionId ?? '-'} ({device.missionStatus ?? '-'})</dd>
             <dt>연결</dt><dd>{device.connectedAt ? new Date(device.connectedAt).toLocaleString() : '-'}</dd>

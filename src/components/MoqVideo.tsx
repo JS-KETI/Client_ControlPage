@@ -1,5 +1,7 @@
 import { useEffect, useRef, memo } from 'react';
 
+const DEBUG = import.meta.env.DEV;
+
 interface Props {
   relayUrl: string;
   broadcastPath: string;
@@ -39,14 +41,14 @@ export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, device
   useEffect(() => {
     const instanceId = randomId();
     const t0 = performance.now();
-    const log = (step: string, extra?: unknown) => {
+    const log = DEBUG ? (step: string, extra?: unknown) => {
       const elapsed = (performance.now() - t0).toFixed(1);
       if (extra !== undefined) {
         console.log(`[MoqVideo:${instanceId}] +${elapsed}ms ${step}`, extra);
       } else {
         console.log(`[MoqVideo:${instanceId}] +${elapsed}ms ${step}`);
       }
-    };
+    } : () => {};
 
     log('mount', { relayUrl, broadcastPath, deviceId });
 
@@ -81,141 +83,83 @@ export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, device
 
     log('dom.appended', { jitter: 80 });
 
-    // Signal subscriptions (moq-watch custom element — use `as any`)
-    const mw = moqWatch as any;
+    if (DEBUG) {
+      // Signal subscriptions (moq-watch custom element — use `as any`)
+      const mw = moqWatch as any;
 
-    // connection.status
-    try {
-      const connStatus = mw?.connection?.status;
-      if (connStatus && typeof connStatus.subscribe === 'function') {
-        const unsub = connStatus.subscribe((status: unknown) => {
-          log('signal.connection.status', { status });
-        });
-        if (typeof unsub === 'function') disposers.push(unsub);
-      }
-    } catch (_) { /* signal not available */ }
-
-    // connection.established
-    try {
-      const connEstablished = mw?.connection?.established;
-      if (connEstablished && typeof connEstablished.subscribe === 'function') {
-        const unsub = connEstablished.subscribe((info: unknown) => {
-          log('signal.connection.established', info);
-        });
-        if (typeof unsub === 'function') disposers.push(unsub);
-      }
-    } catch (_) { /* signal not available */ }
-
-    // broadcast.status
-    try {
-      const broadcastStatus = mw?.broadcast?.status;
-      if (broadcastStatus && typeof broadcastStatus.subscribe === 'function') {
-        const unsub = broadcastStatus.subscribe((status: unknown) => {
-          log('signal.broadcast.status', { status });
-        });
-        if (typeof unsub === 'function') disposers.push(unsub);
-      }
-    } catch (_) { /* signal not available */ }
-
-    // backend.video.source.config
-    try {
-      const videoConfig = mw?.backend?.video?.source?.config;
-      if (videoConfig && typeof videoConfig.subscribe === 'function') {
-        const unsub = videoConfig.subscribe((config: any) => {
-          log('signal.backend.video.source.config', {
-            codec: config?.codec,
-            container: config?.container,
-            kind: config?.kind,
-            timescale: config?.timescale,
-            width: config?.codedWidth ?? config?.width,
-            height: config?.codedHeight ?? config?.height,
-          });
-        });
-        if (typeof unsub === 'function') disposers.push(unsub);
-      }
-    } catch (_) { /* signal not available */ }
-
-    // backend.video.stalled
-    try {
-      const videoStalled = mw?.backend?.video?.stalled;
-      if (videoStalled && typeof videoStalled.subscribe === 'function') {
-        const unsub = videoStalled.subscribe((stalled: unknown) => {
-          log('signal.backend.video.stalled', { stalled });
-        });
-        if (typeof unsub === 'function') disposers.push(unsub);
-      }
-    } catch (_) { /* signal not available */ }
-
-    // backend.video.buffered (deduplicated)
-    try {
-      const videoBuffered = mw?.backend?.video?.buffered;
-      if (videoBuffered && typeof videoBuffered.subscribe === 'function') {
-        let lastBufferedLog = '';
-        const unsub = videoBuffered.subscribe((buffered: unknown) => {
-          const key = JSON.stringify(buffered);
-          if (key !== lastBufferedLog) {
-            lastBufferedLog = key;
-            log('signal.backend.video.buffered', buffered);
+      const trySubscribe = (path: string, getter: () => any, cb: (v: any) => void) => {
+        try {
+          const signal = getter();
+          if (signal && typeof signal.subscribe === 'function') {
+            const unsub = signal.subscribe(cb);
+            if (typeof unsub === 'function') disposers.push(unsub);
           }
-        });
-        if (typeof unsub === 'function') disposers.push(unsub);
-      }
-    } catch (_) { /* signal not available */ }
+        } catch { /* signal not available */ }
+      };
 
-    // backend.video.timestamp (first only)
-    try {
-      const videoTimestamp = mw?.backend?.video?.timestamp;
-      if (videoTimestamp && typeof videoTimestamp.subscribe === 'function') {
-        let firstTs = true;
-        const unsub = videoTimestamp.subscribe((ts: unknown) => {
-          if (firstTs) {
-            firstTs = false;
-            log('signal.backend.video.timestamp.first', { timestamp: ts });
-          }
-        });
-        if (typeof unsub === 'function') disposers.push(unsub);
-      }
-    } catch (_) { /* signal not available */ }
-
-    // Video media events
-    let startupComplete = false;
-    const VIDEO_EVENTS = [
-      'loadstart', 'loadedmetadata', 'loadeddata', 'canplay',
-      'play', 'playing', 'pause', 'waiting', 'stalled',
-      'seeking', 'seeked', 'emptied', 'ended', 'error',
-    ] as const;
-
-    const handleVideoEvent = (e: Event) => {
-      const snap = videoSnapshot(video);
-      if (e.type === 'playing' && !startupComplete) {
-        startupComplete = true;
-        log('startup.complete', snap);
-      } else {
-        log(`video.event.${e.type}`, snap);
-      }
-    };
-
-    for (const evName of VIDEO_EVENTS) {
-      video.addEventListener(evName, handleVideoEvent);
-      disposers.push(() => video.removeEventListener(evName, handleVideoEvent));
-    }
-
-    // 500ms polling (deduplicated by JSON key)
-    let lastPollKey = '';
-    const pollInterval = setInterval(() => {
-      const snap = videoSnapshot(video);
-      const key = JSON.stringify({
-        readyState: snap.readyState,
-        networkState: snap.networkState,
-        paused: snap.paused,
-        buffered: snap.buffered,
+      trySubscribe('connection.status', () => mw?.connection?.status, (status) => {
+        log('signal.connection.status', { status });
       });
-      if (key !== lastPollKey) {
-        lastPollKey = key;
-        log('poll.video.state', snap);
+      trySubscribe('connection.established', () => mw?.connection?.established, (info) => {
+        log('signal.connection.established', info);
+      });
+      trySubscribe('broadcast.status', () => mw?.broadcast?.status, (status) => {
+        log('signal.broadcast.status', { status });
+      });
+      trySubscribe('backend.video.source.config', () => mw?.backend?.video?.source?.config, (config) => {
+        log('signal.backend.video.source.config', {
+          codec: config?.codec, container: config?.container,
+          width: config?.codedWidth ?? config?.width,
+          height: config?.codedHeight ?? config?.height,
+        });
+      });
+      trySubscribe('backend.video.stalled', () => mw?.backend?.video?.stalled, (stalled) => {
+        log('signal.backend.video.stalled', { stalled });
+      });
+
+      let lastBufferedLog = '';
+      trySubscribe('backend.video.buffered', () => mw?.backend?.video?.buffered, (buffered) => {
+        const key = JSON.stringify(buffered);
+        if (key !== lastBufferedLog) { lastBufferedLog = key; log('signal.backend.video.buffered', buffered); }
+      });
+
+      let firstTs = true;
+      trySubscribe('backend.video.timestamp', () => mw?.backend?.video?.timestamp, (ts) => {
+        if (firstTs) { firstTs = false; log('signal.backend.video.timestamp.first', { timestamp: ts }); }
+      });
+
+      // Video media events
+      let startupComplete = false;
+      const VIDEO_EVENTS = [
+        'loadstart', 'loadedmetadata', 'loadeddata', 'canplay',
+        'play', 'playing', 'pause', 'waiting', 'stalled',
+        'seeking', 'seeked', 'emptied', 'ended', 'error',
+      ] as const;
+
+      const handleVideoEvent = (e: Event) => {
+        const snap = videoSnapshot(video);
+        if (e.type === 'playing' && !startupComplete) {
+          startupComplete = true;
+          log('startup.complete', snap);
+        } else {
+          log(`video.event.${e.type}`, snap);
+        }
+      };
+
+      for (const evName of VIDEO_EVENTS) {
+        video.addEventListener(evName, handleVideoEvent);
+        disposers.push(() => video.removeEventListener(evName, handleVideoEvent));
       }
-    }, 500);
-    disposers.push(() => clearInterval(pollInterval));
+
+      // 500ms polling (deduplicated by JSON key)
+      let lastPollKey = '';
+      const pollInterval = setInterval(() => {
+        const snap = videoSnapshot(video);
+        const key = JSON.stringify({ readyState: snap.readyState, networkState: snap.networkState, paused: snap.paused, buffered: snap.buffered });
+        if (key !== lastPollKey) { lastPollKey = key; log('poll.video.state', snap); }
+      }, 500);
+      disposers.push(() => clearInterval(pollInterval));
+    }
 
     const tryPlay = () => {
       video.play().catch(() => {});
@@ -227,7 +171,7 @@ export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, device
     return () => {
       log('cleanup.start');
       for (const dispose of disposers) {
-        try { dispose(); } catch (_) { /* ignore */ }
+        try { dispose(); } catch { /* ignore */ }
       }
       if (moqWatchRef.current) {
         moqWatchRef.current.remove();

@@ -18,7 +18,7 @@ export function VideoGrid({ devices, onDeviceClick, expandedDeviceId }: Props) {
 
   return (
     <div className="video-grid-container">
-      <div className={`video-grid ${expandedDeviceId ? 'has-expanded' : ''}`}>
+      <div className={`video-grid ${expandedDeviceId && pageDevices.some(d => d.deviceId === expandedDeviceId) ? 'has-expanded' : ''}`}>
         {pageDevices.map((device, i) => (
           <div
             key={device.deviceId}
