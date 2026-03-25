@@ -24,6 +24,7 @@ interface ChatMessage {
   content: string;
   parsed?: LlmJsonResponse | null;
   toolResults?: ToolResult[];
+  elapsedSec?: number;
 }
 
 interface Props {
@@ -127,16 +128,16 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const addAssistantMessage = (reply: string, toolResults: ToolResult[]) => {
+  const addAssistantMessage = (reply: string, toolResults: ToolResult[], elapsedSec?: number) => {
     const parsed = tryParseJson(reply);
     const displayText = parsed ? parsed.message : reply;
-    setMessages(prev => [...prev, { role: 'assistant', content: displayText, parsed, toolResults }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: displayText, parsed, toolResults, elapsedSec }]);
   };
 
-  const replaceLastAssistant = (reply: string, toolResults: ToolResult[]) => {
+  const replaceLastAssistant = (reply: string, toolResults: ToolResult[], elapsedSec?: number) => {
     const parsed = tryParseJson(reply);
     const displayText = parsed ? parsed.message : reply;
-    setMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: displayText, parsed, toolResults }]);
+    setMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: displayText, parsed, toolResults, elapsedSec }]);
   };
 
   const sendMessage = async () => {
@@ -145,6 +146,7 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setLoading(true);
+    const startTime = performance.now();
 
     try {
       const res = await fetch('/api/llm/chat', {
@@ -179,15 +181,17 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
           }),
         });
         const data2 = await res2.json();
+        const elapsed = Math.round((performance.now() - startTime) / 1000);
         const reply = data2.data?.reply || 'LLM 응답을 받을 수 없습니다.';
         const toolResults = data2.data?.toolResults || [];
-        replaceLastAssistant(reply, toolResults);
+        replaceLastAssistant(reply, toolResults, elapsed);
         return;
       }
 
+      const elapsed = Math.round((performance.now() - startTime) / 1000);
       const reply = data.data?.reply || 'LLM 응답을 받을 수 없습니다.';
       const toolResults = data.data?.toolResults || [];
-      addAssistantMessage(reply, toolResults);
+      addAssistantMessage(reply, toolResults, elapsed);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: '서버 연결 실패' }]);
     } finally {
@@ -222,14 +226,21 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
             ) : (
               <div className="chat-msg assistant">{msg.content}</div>
             )}
-            {msg.toolResults && msg.toolResults.length > 0 && (
-              <div className="tool-results">
-                {msg.toolResults.map((tr, j) => (
-                  <div key={j} className="tool-result-item">
-                    <span className="tool-name">{tr.toolName}</span>
-                    <span className={`tool-status ${tr.status}`}>{tr.status}</span>
+            {msg.role === 'assistant' && (
+              <div className="msg-meta">
+                {msg.toolResults && msg.toolResults.length > 0 && (
+                  <div className="tool-results">
+                    {msg.toolResults.map((tr, j) => (
+                      <div key={j} className="tool-result-item">
+                        <span className="tool-name">{tr.toolName}</span>
+                        <span className={`tool-status ${tr.status}`}>{tr.status}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+                {msg.elapsedSec != null && (
+                  <span className="msg-elapsed">{msg.elapsedSec}s</span>
+                )}
               </div>
             )}
           </div>

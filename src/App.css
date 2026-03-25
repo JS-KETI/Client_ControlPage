@@ -437,6 +437,20 @@ body {
   font-size: 14px;
 }
 
+.msg-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.msg-elapsed {
+  font-size: 10px;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  margin-left: auto;
+}
+
 .sidebar-input {
   display: flex;
   padding: 12px;
