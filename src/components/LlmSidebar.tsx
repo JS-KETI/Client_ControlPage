@@ -23,19 +23,26 @@ interface Props {
   onClose: () => void;
 }
 
-function captureVideoFrame(deviceId: string): string | null {
+async function captureAndUpload(deviceId: string, imageRef: string): Promise<boolean> {
   const video = document.querySelector(
     `video[data-device-id="${deviceId}"], video[data-device-id]`
   ) as HTMLVideoElement | null;
-  if (!video || video.videoWidth === 0) return null;
+  if (!video || video.videoWidth === 0) return false;
 
   const canvas = document.createElement('canvas');
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   canvas.getContext('2d')!.drawImage(video, 0, 0);
-  // data:image/jpeg;base64,... 에서 base64 부분만 추출
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-  return dataUrl.split(',')[1] || null;
+
+  const blob = await new Promise<Blob | null>(resolve =>
+    canvas.toBlob(resolve, 'image/jpeg', 0.85)
+  );
+  if (!blob) return false;
+
+  const form = new FormData();
+  form.append('image', blob, 'capture.jpg');
+  const res = await fetch(`/api/images/${imageRef}`, { method: 'POST', body: form });
+  return res.ok;
 }
 
 export function LlmSidebar({ isOpen, onClose }: Props) {
@@ -86,14 +93,15 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
       const pendingCaptureToken: string | undefined = data.data?.pendingCaptureToken;
 
       if (pendingCaptureToken) {
-        // 서버가 프레임을 요청함 — video에서 현재 프레임 추출
         setMessages(prev => [...prev, { role: 'assistant', content: '영상 프레임 분석 중...' }]);
 
         // deviceId는 토큰에서 추출 (형식: "DRONE-001_1711...")
         const deviceId = pendingCaptureToken.split('_').slice(0, -1).join('_');
-        const base64Data = captureVideoFrame(deviceId);
 
-        // 2차 호출: pendingToken + pendingResult로 재진입
+        // JPEG blob을 multipart로 서버에 업로드 (base64 변환 없음)
+        const uploaded = await captureAndUpload(deviceId, pendingCaptureToken);
+
+        // 2차 호출: pendingToken + imageRef로 재진입 (이미지 데이터 없이 참조만)
         const res2 = await fetch('/api/llm/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -102,20 +110,18 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
             conversationId: null,
             model: selectedModel || null,
             pendingToken: pendingCaptureToken,
-            pendingResult: base64Data
-              ? { deviceId, base64Data }
+            pendingResult: uploaded
+              ? { deviceId, imageRef: pendingCaptureToken }
               : { deviceId, error: '영상 프레임을 캡처할 수 없습니다.' },
           }),
         });
         const data2 = await res2.json();
         const reply = data2.data?.reply || 'LLM 응답을 받을 수 없습니다.';
         const toolResults = data2.data?.toolResults || [];
-        // 이전 "분석 중..." 메시지를 제거하고 최종 결과로 교체
         setMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: reply, toolResults }]);
         return;
       }
 
-      // pending이 아닌 일반 응답
       const reply = data.data?.reply || 'LLM 응답을 받을 수 없습니다.';
       const toolResults = data.data?.toolResults || [];
       setMessages(prev => [...prev, { role: 'assistant', content: reply, toolResults }]);
