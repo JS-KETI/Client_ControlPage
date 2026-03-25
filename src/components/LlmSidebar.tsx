@@ -49,13 +49,11 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = async (messageOverride?: string, captureToken?: string) => {
-    const userMsg = messageOverride ?? input.trim();
+  const sendMessage = async () => {
+    const userMsg = input.trim();
     if (!userMsg || loading) return;
-    if (!messageOverride) {
-      setInput('');
-      setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
-    }
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setLoading(true);
 
     try {
@@ -66,35 +64,9 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
           message: userMsg,
           conversationId: null,
           model: selectedModel || null,
-          ...(captureToken ? { captureToken } : {}),
         }),
       });
       const data = await res.json();
-      const pendingCaptureToken: string | undefined = data.data?.pendingCaptureToken;
-
-      if (pendingCaptureToken) {
-        setMessages(prev => [...prev, { role: 'assistant', content: '캡처 중...' }]);
-        setLoading(false);
-
-        const video = document.querySelector('video[data-device-id]') as HTMLVideoElement | null;
-        if (video) {
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          canvas.getContext('2d')!.drawImage(video, 0, 0);
-          canvas.toBlob(async (blob) => {
-            if (!blob) return;
-            const form = new FormData();
-            form.append('image', blob, 'capture.jpg');
-            await fetch(`/api/captures/${pendingCaptureToken}`, { method: 'POST', body: form });
-            sendMessage(userMsg, pendingCaptureToken);
-          }, 'image/jpeg', 0.92);
-        } else {
-          sendMessage(userMsg, pendingCaptureToken);
-        }
-        return;
-      }
-
       const reply = data.data?.reply || 'LLM 응답을 받을 수 없습니다.';
       const toolResults = data.data?.toolResults || [];
       setMessages(prev => [...prev, { role: 'assistant', content: reply, toolResults }]);
