@@ -383,6 +383,60 @@ body {
   font-style: italic;
 }
 
+/* Assistant Card */
+.assistant-card {
+  align-self: flex-start;
+  background: var(--bg-card);
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 85%;
+  font-size: 14px;
+  line-height: 1.5;
+  border: 1px solid var(--border);
+}
+
+.card-section {
+  padding: 10px 14px;
+}
+
+.card-section + .card-section {
+  border-top: 1px solid var(--border);
+}
+
+.card-section-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.device-section .card-section-body {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.analysis-section .analysis-items {
+  margin: 4px 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.analysis-section .analysis-items li {
+  margin-bottom: 2px;
+}
+
+.analysis-section .analysis-summary {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 4px 0 0;
+}
+
+.message-section {
+  font-size: 14px;
+}
+
 .sidebar-input {
   display: flex;
   padding: 12px;
