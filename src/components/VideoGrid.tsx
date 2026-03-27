@@ -5,11 +5,12 @@ import { DeviceCard } from './DeviceCard';
 interface Props {
   devices: DeviceSummary[];
   onDeviceClick: (device: DeviceSummary) => void;
+  expandedDeviceId: string | null;
 }
 
 const GRID_SIZE = 9;
 
-export function VideoGrid({ devices, onDeviceClick }: Props) {
+export function VideoGrid({ devices, onDeviceClick, expandedDeviceId }: Props) {
   const [page, setPage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(devices.length / GRID_SIZE));
   const pageDevices = devices.slice(page * GRID_SIZE, (page + 1) * GRID_SIZE);
@@ -17,9 +18,12 @@ export function VideoGrid({ devices, onDeviceClick }: Props) {
 
   return (
     <div className="video-grid-container">
-      <div className="video-grid">
+      <div className={`video-grid ${expandedDeviceId && pageDevices.some(d => d.deviceId === expandedDeviceId) ? 'has-expanded' : ''}`}>
         {pageDevices.map((device, i) => (
-          <div key={device.deviceId} className="grid-cell">
+          <div
+            key={device.deviceId}
+            className={`grid-cell ${device.deviceId === expandedDeviceId ? 'expanded' : ''}`}
+          >
             <DeviceCard
               device={device}
               index={page * GRID_SIZE + i}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useDeviceStore } from './hooks/useDeviceStore';
 import { useWebSocket } from './hooks/useWebSocket';
 import { VideoGrid } from './components/VideoGrid';
@@ -14,7 +14,6 @@ const WS_URL = `ws://${window.location.host}/ws/monitoring`;
 function App() {
   const { devices, handleSnapshot, handleUpsert, handleRemove } = useDeviceStore();
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useWebSocket({
@@ -27,15 +26,13 @@ function App() {
   const deviceList = useMemo(() => Array.from(devices.values()), [devices]);
   const selectedDevice = selectedDeviceId ? devices.get(selectedDeviceId) : null;
 
-  const handleDeviceClick = (device: DeviceSummary) => {
-    setSelectedDeviceId(device.deviceId);
-    setModalVisible(true);
-  };
+  const handleDeviceClick = useCallback((device: DeviceSummary) => {
+    setSelectedDeviceId(prev => prev === device.deviceId ? null : device.deviceId);
+  }, []);
 
-  const handleModalClose = () => {
-    setModalVisible(false);
-    // selectedDeviceId를 유지하여 MoqVideo 연결 보존
-  };
+  const handlePanelClose = useCallback(() => {
+    setSelectedDeviceId(null);
+  }, []);
 
   return (
     <div className="app">
@@ -51,13 +48,15 @@ function App() {
       </header>
 
       <main className="app-main">
-        <VideoGrid devices={deviceList} onDeviceClick={handleDeviceClick} />
+        <VideoGrid
+          devices={deviceList}
+          onDeviceClick={handleDeviceClick}
+          expandedDeviceId={selectedDeviceId}
+        />
       </main>
 
       {selectedDevice && (
-        <div style={{ display: modalVisible ? 'block' : 'none' }}>
-          <DeviceModal device={selectedDevice} onClose={handleModalClose} />
-        </div>
+        <DeviceModal device={selectedDevice} onClose={handlePanelClose} />
       )}
 
       <button className="fab" onClick={() => setSidebarOpen(true)}>
