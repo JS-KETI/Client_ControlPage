@@ -84,10 +84,10 @@ export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, device
     log('dom.appended', { jitter: 80 });
 
     if (DEBUG) {
-      // Signal subscriptions (moq-watch custom element — use `as any`)
+      // Signal subscriptions (moq-watch custom element ??use `as any`)
       const mw = moqWatch as any;
 
-      const trySubscribe = (path: string, getter: () => any, cb: (v: any) => void) => {
+      const trySubscribe = (_path: string, getter: () => any, cb: (v: any) => void) => {
         try {
           const signal = getter();
           if (signal && typeof signal.subscribe === 'function') {
