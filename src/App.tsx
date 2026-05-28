@@ -9,7 +9,8 @@ import type { DeviceSummary } from './types';
 import '@moq/watch/element';
 import './App.css';
 
-const WS_URL = `ws://${window.location.host}/ws/monitoring`;
+const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss' : 'ws';
+const WS_URL = `${WS_PROTOCOL}://${window.location.host}/ws/monitoring`;
 
 function App() {
   const { devices, handleSnapshot, handleUpsert, handleRemove } = useDeviceStore();
