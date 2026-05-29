@@ -40,9 +40,9 @@ export function VideoGrid({ devices, onDeviceClick, expandedDeviceId, gridCount 
       </div>
       {totalPages > 1 && (
         <div className="pagination">
-          <button disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>이전</button>
+          <button disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>Prev</button>
           <span>{safePage + 1} / {totalPages}</span>
-          <button disabled={safePage >= totalPages - 1} onClick={() => setPage(safePage + 1)}>다음</button>
+          <button disabled={safePage >= totalPages - 1} onClick={() => setPage(safePage + 1)}>Next</button>
         </div>
       )}
     </div>

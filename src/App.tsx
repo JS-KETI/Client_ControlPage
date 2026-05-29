@@ -40,14 +40,14 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>MoQ 관제 시스템</h1>
+        <h1>MoQ Control System</h1>
         <nav className="tab-bar">
-          <button className="tab active">모니터링</button>
-          <button className="tab">히스토리</button>
-          <button className="tab">설정</button>
+          <button className="tab active">Monitoring</button>
+          <button className="tab">History</button>
+          <button className="tab">Settings</button>
         </nav>
         <WeatherPanel />
-        <div className="device-count">연결 기기: {deviceList.length}대</div>
+        <div className="device-count">Connected: {deviceList.length}</div>
       </header>
 
       <main className="app-main">
