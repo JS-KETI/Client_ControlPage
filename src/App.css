@@ -79,31 +79,30 @@ body {
 .video-grid {
   display: grid;
   gap: 12px;
-  aspect-ratio: 16 / 9;
 }
 
+/* Only the column count changes per layout; rows auto-size to the cells.
+   Each cell holds a fixed 16:9 aspect-ratio (see .grid-cell), so the video
+   proportion stays constant regardless of how many cells are shown. */
 .video-grid.grid-1 {
   grid-template-columns: 1fr;
-  grid-template-rows: 1fr;
 }
 
 .video-grid.grid-2 {
   grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: 1fr;
 }
 
 .video-grid.grid-4 {
   grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, 1fr);
 }
 
 .video-grid.grid-8 {
   grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(2, 1fr);
 }
 
 .grid-cell {
   min-height: 0;
+  aspect-ratio: 16 / 9;
 }
 
 .empty-cell {
