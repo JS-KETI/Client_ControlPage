@@ -42,11 +42,11 @@ export function WeatherPanel() {
 
   return (
     <div className="weather-panel">
-      <span className="weather-label">기상</span>
+      <span className="weather-label">Weather</span>
       {editing ? (
         <div className="weather-edit">
           <label>
-            강수량
+            Rainfall
             <input
               type="number"
               step="0.1"
@@ -57,7 +57,7 @@ export function WeatherPanel() {
             mm
           </label>
           <label>
-            풍속
+            Wind
             <input
               type="number"
               step="0.1"
@@ -67,14 +67,14 @@ export function WeatherPanel() {
             />
             m/s
           </label>
-          <button className="weather-btn save" onClick={save}>저장</button>
-          <button className="weather-btn cancel" onClick={() => { setDraft(weather); setEditing(false); }}>취소</button>
+          <button className="weather-btn save" onClick={save}>Save</button>
+          <button className="weather-btn cancel" onClick={() => { setDraft(weather); setEditing(false); }}>Cancel</button>
         </div>
       ) : (
-        <div className="weather-display" onClick={() => setEditing(true)} title="클릭하여 수정">
-          <span className={rainfallWarning ? 'warn' : ''}>강수 {weather.rainfall}mm</span>
-          <span className={windWarning ? 'warn' : ''}>풍속 {weather.windSpeed}m/s</span>
-          {(rainfallWarning || windWarning) && <span className="flight-warn">비행부적합</span>}
+        <div className="weather-display" onClick={() => setEditing(true)} title="Click to edit">
+          <span className={rainfallWarning ? 'warn' : ''}>Rain {weather.rainfall}mm</span>
+          <span className={windWarning ? 'warn' : ''}>Wind {weather.windSpeed}m/s</span>
+          {(rainfallWarning || windWarning) && <span className="flight-warn">Unsafe to fly</span>}
         </div>
       )}
     </div>

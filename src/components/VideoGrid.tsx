@@ -6,19 +6,20 @@ interface Props {
   devices: DeviceSummary[];
   onDeviceClick: (device: DeviceSummary) => void;
   expandedDeviceId: string | null;
+  gridCount: number;
 }
 
-const GRID_SIZE = 9;
-
-export function VideoGrid({ devices, onDeviceClick, expandedDeviceId }: Props) {
+export function VideoGrid({ devices, onDeviceClick, expandedDeviceId, gridCount }: Props) {
   const [page, setPage] = useState(0);
-  const totalPages = Math.max(1, Math.ceil(devices.length / GRID_SIZE));
-  const pageDevices = devices.slice(page * GRID_SIZE, (page + 1) * GRID_SIZE);
-  const emptyCount = GRID_SIZE - pageDevices.length;
+  const totalPages = Math.max(1, Math.ceil(devices.length / gridCount));
+  // Clamp so a smaller gridCount (fewer cells/page) never leaves us on an out-of-range page.
+  const safePage = Math.min(page, totalPages - 1);
+  const pageDevices = devices.slice(safePage * gridCount, (safePage + 1) * gridCount);
+  const emptyCount = gridCount - pageDevices.length;
 
   return (
     <div className="video-grid-container">
-      <div className={`video-grid ${expandedDeviceId && pageDevices.some(d => d.deviceId === expandedDeviceId) ? 'has-expanded' : ''}`}>
+      <div className={`video-grid grid-${gridCount} ${expandedDeviceId && pageDevices.some(d => d.deviceId === expandedDeviceId) ? 'has-expanded' : ''}`}>
         {pageDevices.map((device, i) => (
           <div
             key={device.deviceId}
@@ -26,22 +27,22 @@ export function VideoGrid({ devices, onDeviceClick, expandedDeviceId }: Props) {
           >
             <DeviceCard
               device={device}
-              index={page * GRID_SIZE + i}
+              index={safePage * gridCount + i}
               onClick={onDeviceClick}
             />
           </div>
         ))}
         {Array.from({ length: emptyCount }).map((_, i) => (
-          <div key={`empty-${page}-${i}`} className="grid-cell">
+          <div key={`empty-${safePage}-${i}`} className="grid-cell">
             <div className="empty-cell" />
           </div>
         ))}
       </div>
       {totalPages > 1 && (
         <div className="pagination">
-          <button disabled={page === 0} onClick={() => setPage(p => p - 1)}>이전</button>
-          <span>{page + 1} / {totalPages}</span>
-          <button disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>다음</button>
+          <button disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>Prev</button>
+          <span>{safePage + 1} / {totalPages}</span>
+          <button disabled={safePage >= totalPages - 1} onClick={() => setPage(safePage + 1)}>Next</button>
         </div>
       )}
     </div>

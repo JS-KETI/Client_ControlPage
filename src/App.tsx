@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useDeviceStore } from './hooks/useDeviceStore';
 import { useWebSocket } from './hooks/useWebSocket';
 import { VideoGrid } from './components/VideoGrid';
+import { GridSelector } from './components/GridSelector';
 import { DeviceModal } from './components/DeviceModal';
 import { LlmSidebar } from './components/LlmSidebar';
 import { WeatherPanel } from './components/WeatherPanel';
@@ -16,6 +17,7 @@ function App() {
   const { devices, handleSnapshot, handleUpsert, handleRemove } = useDeviceStore();
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [gridCount, setGridCount] = useState(4);
 
   useWebSocket({
     url: WS_URL,
@@ -38,14 +40,14 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>MoQ 관제 시스템</h1>
+        <h1>MoQ Control System</h1>
         <nav className="tab-bar">
-          <button className="tab active">모니터링</button>
-          <button className="tab">히스토리</button>
-          <button className="tab">설정</button>
+          <button className="tab active">Monitoring</button>
+          <button className="tab">History</button>
+          <button className="tab">Settings</button>
         </nav>
         <WeatherPanel />
-        <div className="device-count">연결 기기: {deviceList.length}대</div>
+        <div className="device-count">Connected: {deviceList.length}</div>
       </header>
 
       <main className="app-main">
@@ -53,7 +55,9 @@ function App() {
           devices={deviceList}
           onDeviceClick={handleDeviceClick}
           expandedDeviceId={selectedDeviceId}
+          gridCount={gridCount}
         />
+        <GridSelector value={gridCount} onChange={setGridCount} />
       </main>
 
       {selectedDevice && (

@@ -76,9 +76,9 @@ function AssistantCard({ parsed }: { parsed: LlmJsonResponse }) {
     <div className="assistant-card">
       {parsed.device && (
         <div className="card-section device-section">
-          <div className="card-section-title">{parsed.device.name || '디바이스'}</div>
+          <div className="card-section-title">{parsed.device.name || 'Device'}</div>
           <div className="card-section-body">
-            {parsed.device.battery != null && <span>배터리 {parsed.device.battery}%</span>}
+            {parsed.device.battery != null && <span>Battery {parsed.device.battery}%</span>}
             {parsed.device.location && <span>{parsed.device.location}</span>}
             {parsed.device.status && <span>{parsed.device.status}</span>}
           </div>
@@ -86,7 +86,7 @@ function AssistantCard({ parsed }: { parsed: LlmJsonResponse }) {
       )}
       {parsed.analysis && (
         <div className="card-section analysis-section">
-          <div className="card-section-title">영상 분석 결과</div>
+          <div className="card-section-title">Video Analysis</div>
           {parsed.analysis.items && parsed.analysis.items.length > 0 && (
             <ul className="analysis-items">
               {parsed.analysis.items.map((item, i) => <li key={i}>{item}</li>)}
@@ -162,7 +162,7 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
       const pendingCaptureToken: string | undefined = data.data?.pendingCaptureToken;
 
       if (pendingCaptureToken) {
-        setMessages(prev => [...prev, { role: 'assistant', content: '영상 프레임 분석 중...' }]);
+        setMessages(prev => [...prev, { role: 'assistant', content: 'Analyzing video frame...' }]);
 
         const deviceId = pendingCaptureToken.split('_').slice(0, -1).join('_');
         const uploaded = await captureAndUpload(deviceId, pendingCaptureToken);
@@ -177,23 +177,23 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
             pendingToken: pendingCaptureToken,
             pendingResult: uploaded
               ? { deviceId, imageRef: pendingCaptureToken }
-              : { deviceId, error: '영상 프레임을 캡처할 수 없습니다.' },
+              : { deviceId, error: 'Cannot capture video frame.' },
           }),
         });
         const data2 = await res2.json();
         const elapsed = Math.round((performance.now() - startTime) / 1000);
-        const reply = data2.data?.reply || 'LLM 응답을 받을 수 없습니다.';
+        const reply = data2.data?.reply || 'No response from LLM.';
         const toolResults = data2.data?.toolResults || [];
         replaceLastAssistant(reply, toolResults, elapsed);
         return;
       }
 
       const elapsed = Math.round((performance.now() - startTime) / 1000);
-      const reply = data.data?.reply || 'LLM 응답을 받을 수 없습니다.';
+      const reply = data.data?.reply || 'No response from LLM.';
       const toolResults = data.data?.toolResults || [];
       addAssistantMessage(reply, toolResults, elapsed);
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: '서버 연결 실패' }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Server connection failed' }]);
     } finally {
       setLoading(false);
     }
@@ -204,7 +204,7 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
   return (
     <div className="llm-sidebar">
       <div className="sidebar-header">
-        <h3>AI 어시스턴트</h3>
+        <h3>AI Assistant</h3>
         <button onClick={onClose}>&#x2715;</button>
       </div>
 
@@ -245,7 +245,7 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
             )}
           </div>
         ))}
-        {loading && <div className="chat-msg assistant loading">응답 생성 중...</div>}
+        {loading && <div className="chat-msg assistant loading">Generating response...</div>}
         <div ref={chatEndRef} />
       </div>
       <div className="sidebar-input">
@@ -253,9 +253,9 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && sendMessage()}
-          placeholder="명령을 입력하세요..."
+          placeholder="Enter a command..."
         />
-        <button onClick={() => sendMessage()} disabled={loading}>전송</button>
+        <button onClick={() => sendMessage()} disabled={loading}>Send</button>
       </div>
     </div>
   );

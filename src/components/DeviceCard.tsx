@@ -14,9 +14,9 @@ export function DeviceCard({ device, index, onClick }: Props) {
   return (
     <div className="device-card" onClick={() => onClick(device)}>
       <div className="card-header">
-        <span className="device-label">{index + 1}번:{device.deviceId}</span>
+        <span className="device-label">#{index + 1} {device.deviceId}</span>
         <span className="battery" style={{ color: batteryColor }}>
-          배터리 {device.battery ?? '-'}%
+          Battery {device.battery ?? '-'}%
         </span>
       </div>
       <div className="card-video">
@@ -39,8 +39,8 @@ export function DeviceCard({ device, index, onClick }: Props) {
         </div>
       </div>
       <div className="card-footer">
-        <span className="location">{device.location ?? '위치 미확인'}</span>
-        <span className="status">{device.missionStatus === 'in_progress' ? '임무 수행 중' : '대기 중'}</span>
+        <span className="location">{device.location ?? 'Location unknown'}</span>
+        <span className="status">{device.missionStatus === 'in_progress' ? 'On mission' : 'Idle'}</span>
       </div>
     </div>
   );
