@@ -78,10 +78,28 @@ body {
 
 .video-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
   gap: 12px;
   aspect-ratio: 16 / 9;
+}
+
+.video-grid.grid-1 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+.video-grid.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: 1fr;
+}
+
+.video-grid.grid-4 {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+.video-grid.grid-8 {
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
 }
 
 .grid-cell {
@@ -215,6 +233,43 @@ body {
 .pagination button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.grid-selector {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.grid-selector-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-right: 4px;
+}
+
+.grid-selector-btn {
+  width: 36px;
+  height: 32px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+}
+
+.grid-selector-btn:hover {
+  border-color: var(--accent);
+}
+
+.grid-selector-btn.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
 }
 
 

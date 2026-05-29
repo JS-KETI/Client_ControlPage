@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useDeviceStore } from './hooks/useDeviceStore';
 import { useWebSocket } from './hooks/useWebSocket';
 import { VideoGrid } from './components/VideoGrid';
+import { GridSelector } from './components/GridSelector';
 import { DeviceModal } from './components/DeviceModal';
 import { LlmSidebar } from './components/LlmSidebar';
 import { WeatherPanel } from './components/WeatherPanel';
@@ -16,6 +17,7 @@ function App() {
   const { devices, handleSnapshot, handleUpsert, handleRemove } = useDeviceStore();
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [gridCount, setGridCount] = useState(4);
 
   useWebSocket({
     url: WS_URL,
@@ -53,7 +55,9 @@ function App() {
           devices={deviceList}
           onDeviceClick={handleDeviceClick}
           expandedDeviceId={selectedDeviceId}
+          gridCount={gridCount}
         />
+        <GridSelector value={gridCount} onChange={setGridCount} />
       </main>
 
       {selectedDevice && (
