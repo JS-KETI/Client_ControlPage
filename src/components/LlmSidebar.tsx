@@ -5,31 +5,46 @@ interface AvailableModel {
   label: string;
 }
 
-interface ToolResult {
-  status: string;
-  toolName: string;
-  data: unknown;
-  message: string | null;
+interface LlmField {
+  label: string;
+  value: string;
 }
 
 interface LlmJsonResponse {
   type: 'final_answer' | 'follow_up';
   message: string;
-  device?: { name?: string; battery?: number; location?: string; status?: string };
-  analysis?: { items?: string[]; summary?: string };
+  fields?: LlmField[];
+}
+
+interface ToolStep {
+  name: string;
+  status: 'running' | 'success' | 'error';
 }
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   parsed?: LlmJsonResponse | null;
-  toolResults?: ToolResult[];
+  steps?: ToolStep[];
+  streaming?: boolean;
   elapsedSec?: number;
 }
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+}
+
+const TOOL_LABELS: Record<string, string> = {
+  list_devices: '디바이스 목록 조회',
+  get_device_status: '디바이스 상태 조회',
+  get_weather: '기상 정보 조회',
+  capture_photo: '영상 캡처',
+  analyze_image: '이미지 분석',
+};
+
+function toolLabel(name: string): string {
+  return TOOL_LABELS[name] || name;
 }
 
 function tryParseJson(text: string): LlmJsonResponse | null {
@@ -71,33 +86,57 @@ async function captureAndUpload(deviceId: string, imageRef: string): Promise<boo
   return res.ok;
 }
 
-function AssistantCard({ parsed }: { parsed: LlmJsonResponse }) {
+// SSE 청크("event:...\ndata:...") 파싱
+function parseSseChunk(raw: string): { event: string; data: unknown } | null {
+  let event = 'message';
+  let data = '';
+  for (const line of raw.split('\n')) {
+    if (line.startsWith('event:')) event = line.slice(6).trim();
+    else if (line.startsWith('data:')) data += line.slice(5).trim();
+  }
+  if (!data) return null;
+  try {
+    return { event, data: JSON.parse(data) };
+  } catch {
+    return null;
+  }
+}
+
+function FieldCard({ parsed }: { parsed: LlmJsonResponse }) {
   return (
     <div className="assistant-card">
-      {parsed.device && (
-        <div className="card-section device-section">
-          <div className="card-section-title">{parsed.device.name || 'Device'}</div>
-          <div className="card-section-body">
-            {parsed.device.battery != null && <span>Battery {parsed.device.battery}%</span>}
-            {parsed.device.location && <span>{parsed.device.location}</span>}
-            {parsed.device.status && <span>{parsed.device.status}</span>}
-          </div>
+      <div className="card-section message-section">{parsed.message}</div>
+      {parsed.fields && parsed.fields.length > 0 && (
+        <div className="card-section fields-section">
+          {parsed.fields.map((f, i) => (
+            <div key={i} className="field-row">
+              <span className="field-label">{f.label}</span>
+              <span className="field-value">{f.value}</span>
+            </div>
+          ))}
         </div>
       )}
-      {parsed.analysis && (
-        <div className="card-section analysis-section">
-          <div className="card-section-title">Video Analysis</div>
-          {parsed.analysis.items && parsed.analysis.items.length > 0 && (
-            <ul className="analysis-items">
-              {parsed.analysis.items.map((item, i) => <li key={i}>{item}</li>)}
-            </ul>
-          )}
-          {parsed.analysis.summary && <p className="analysis-summary">{parsed.analysis.summary}</p>}
+    </div>
+  );
+}
+
+function ToolSteps({ steps }: { steps: ToolStep[] }) {
+  return (
+    <div className="tool-steps">
+      {steps.map((s, i) => (
+        <div key={i} className={`tool-step ${s.status}`}>
+          <span className="step-icon">
+            {s.status === 'running' ? (
+              <span className="step-spinner" />
+            ) : s.status === 'success' ? (
+              '✓'
+            ) : (
+              '✗'
+            )}
+          </span>
+          <span className="step-label">{toolLabel(s.name)}</span>
         </div>
-      )}
-      <div className="card-section message-section">
-        {parsed.message}
-      </div>
+      ))}
     </div>
   );
 }
@@ -116,9 +155,7 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
       .then(data => {
         if (data.data) {
           setModels(data.data);
-          if (data.data.length > 0 && !selectedModel) {
-            setSelectedModel(data.data[0].id);
-          }
+          if (data.data.length > 0) setSelectedModel(data.data[0].id);
         }
       })
       .catch(() => {});
@@ -128,72 +165,113 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const addAssistantMessage = (reply: string, toolResults: ToolResult[], elapsedSec?: number) => {
-    const parsed = tryParseJson(reply);
-    const displayText = parsed ? parsed.message : reply;
-    setMessages(prev => [...prev, { role: 'assistant', content: displayText, parsed, toolResults, elapsedSec }]);
+  // 마지막 assistant 메시지 갱신
+  const updateLastAssistant = (updater: (m: ChatMessage) => ChatMessage) => {
+    setMessages(prev => {
+      const idx = prev.length - 1;
+      if (idx < 0 || prev[idx].role !== 'assistant') return prev;
+      const next = [...prev];
+      next[idx] = updater(next[idx]);
+      return next;
+    });
   };
 
-  const replaceLastAssistant = (reply: string, toolResults: ToolResult[], elapsedSec?: number) => {
-    const parsed = tryParseJson(reply);
-    const displayText = parsed ? parsed.message : reply;
-    setMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: displayText, parsed, toolResults, elapsedSec }]);
+  // SSE 스트림 처리 (pending_capture 시 재귀 재호출)
+  const streamChat = async (body: Record<string, unknown>, startTime: number): Promise<void> => {
+    const res = await fetch('/api/llm/chat/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.body) throw new Error('no stream');
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const chunks = buffer.split('\n\n');
+      buffer = chunks.pop() || '';
+
+      for (const chunk of chunks) {
+        const parsed = parseSseChunk(chunk);
+        if (!parsed) continue;
+        const { event } = parsed;
+        const data = parsed.data as Record<string, string>;
+
+        if (event === 'tool_start') {
+          updateLastAssistant(m => ({
+            ...m,
+            steps: [...(m.steps || []), { name: data.name, status: 'running' }],
+          }));
+        } else if (event === 'tool_done') {
+          updateLastAssistant(m => ({
+            ...m,
+            steps: (m.steps || []).map(s =>
+              s.name === data.name && s.status === 'running'
+                ? { ...s, status: data.status === 'success' ? 'success' : 'error' }
+                : s
+            ),
+          }));
+        } else if (event === 'final') {
+          const reply = data.reply || '';
+          const parsedReply = tryParseJson(reply);
+          const elapsed = Math.round((performance.now() - startTime) / 1000);
+          updateLastAssistant(m => ({
+            ...m,
+            content: parsedReply ? parsedReply.message : reply,
+            parsed: parsedReply,
+            streaming: false,
+            elapsedSec: elapsed,
+          }));
+        } else if (event === 'pending_capture') {
+          const token = data.captureToken;
+          const deviceId = token.split('_').slice(0, -1).join('_');
+          const uploaded = await captureAndUpload(deviceId, token);
+          await streamChat(
+            {
+              ...body,
+              pendingToken: token,
+              pendingResult: uploaded
+                ? { deviceId, imageRef: token }
+                : { deviceId, error: 'Cannot capture video frame.' },
+            },
+            startTime
+          );
+          return;
+        } else if (event === 'error') {
+          updateLastAssistant(m => ({
+            ...m,
+            content: data.message || '오류가 발생했습니다.',
+            streaming: false,
+          }));
+        }
+      }
+    }
   };
 
   const sendMessage = async () => {
     const userMsg = input.trim();
     if (!userMsg || loading) return;
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: userMsg },
+      { role: 'assistant', content: '', steps: [], streaming: true },
+    ]);
     setLoading(true);
     const startTime = performance.now();
 
     try {
-      const res = await fetch('/api/llm/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: userMsg,
-          conversationId: null,
-          model: selectedModel || null,
-        }),
-      });
-      const data = await res.json();
-      const pendingCaptureToken: string | undefined = data.data?.pendingCaptureToken;
-
-      if (pendingCaptureToken) {
-        setMessages(prev => [...prev, { role: 'assistant', content: 'Analyzing video frame...' }]);
-
-        const deviceId = pendingCaptureToken.split('_').slice(0, -1).join('_');
-        const uploaded = await captureAndUpload(deviceId, pendingCaptureToken);
-
-        const res2 = await fetch('/api/llm/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: userMsg,
-            conversationId: null,
-            model: selectedModel || null,
-            pendingToken: pendingCaptureToken,
-            pendingResult: uploaded
-              ? { deviceId, imageRef: pendingCaptureToken }
-              : { deviceId, error: 'Cannot capture video frame.' },
-          }),
-        });
-        const data2 = await res2.json();
-        const elapsed = Math.round((performance.now() - startTime) / 1000);
-        const reply = data2.data?.reply || 'No response from LLM.';
-        const toolResults = data2.data?.toolResults || [];
-        replaceLastAssistant(reply, toolResults, elapsed);
-        return;
-      }
-
-      const elapsed = Math.round((performance.now() - startTime) / 1000);
-      const reply = data.data?.reply || 'No response from LLM.';
-      const toolResults = data.data?.toolResults || [];
-      addAssistantMessage(reply, toolResults, elapsed);
+      await streamChat(
+        { message: userMsg, conversationId: null, model: selectedModel || null },
+        startTime
+      );
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Server connection failed' }]);
+      updateLastAssistant(m => ({ ...m, content: 'Server connection failed', streaming: false }));
     } finally {
       setLoading(false);
     }
@@ -221,33 +299,31 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
           <div key={i}>
             {msg.role === 'user' ? (
               <div className="chat-msg user">{msg.content}</div>
-            ) : msg.parsed ? (
-              <AssistantCard parsed={msg.parsed} />
             ) : (
-              <div className="chat-msg assistant">{msg.content}</div>
-            )}
-            {msg.role === 'assistant' && (
-              <div className="msg-meta">
-                {msg.toolResults && msg.toolResults.length > 0 && (
-                  <div className="tool-results">
-                    {msg.toolResults.map((tr, j) => (
-                      <div key={j} className="tool-result-item">
-                        <span className="tool-name">{tr.toolName}</span>
-                        <span className={`tool-status ${tr.status}`}>{tr.status}</span>
-                      </div>
-                    ))}
-                  </div>
+              <div className="assistant-block">
+                {msg.steps && msg.steps.length > 0 && <ToolSteps steps={msg.steps} />}
+                {msg.streaming && (!msg.steps || msg.steps.length === 0) && (
+                  <div className="chat-msg assistant loading">분석 중…</div>
                 )}
-                {msg.elapsedSec != null && (
-                  <span className="msg-elapsed">{msg.elapsedSec}s</span>
+                {!msg.streaming && (
+                  msg.parsed ? (
+                    <FieldCard parsed={msg.parsed} />
+                  ) : (
+                    msg.content && <div className="chat-msg assistant">{msg.content}</div>
+                  )
+                )}
+                {!msg.streaming && msg.elapsedSec != null && (
+                  <div className="msg-meta">
+                    <span className="msg-elapsed">{msg.elapsedSec}s</span>
+                  </div>
                 )}
               </div>
             )}
           </div>
         ))}
-        {loading && <div className="chat-msg assistant loading">Generating response...</div>}
         <div ref={chatEndRef} />
       </div>
+
       <div className="sidebar-input">
         <input
           value={input}

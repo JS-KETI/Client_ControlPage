@@ -766,3 +766,81 @@ body {
   from { opacity: 0; transform: translateX(-50%) translateY(12px); }
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* Tool Steps (실시간 도구 진행) */
+.assistant-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-self: flex-start;
+  max-width: 90%;
+}
+
+.tool-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.tool-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.tool-step .step-icon {
+  width: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.tool-step.success .step-icon { color: #22c55e; }
+.tool-step.error .step-icon { color: #ef4444; }
+.tool-step.success .step-label,
+.tool-step.error .step-label { color: var(--text-secondary); }
+.tool-step.running .step-label { color: var(--text-primary); }
+
+.step-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Field Card (구조화 응답) */
+.fields-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.field-label {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.field-value {
+  color: var(--text-primary);
+  text-align: right;
+  word-break: break-word;
+}
