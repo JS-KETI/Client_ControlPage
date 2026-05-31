@@ -3,80 +3,107 @@ import { useState, useEffect } from 'react';
 interface WeatherData {
   rainfall: number;
   windSpeed: number;
+  locationName: string | null;
+  available: boolean;
 }
 
-export function WeatherPanel() {
-  const [weather, setWeather] = useState<WeatherData>({ rainfall: 0, windSpeed: 3.5 });
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<WeatherData>({ rainfall: 0, windSpeed: 3.5 });
+interface FlightCriteria {
+  maxWindSpeed: number;
+  maxRainfall: number;
+}
 
+type Status = 'loading' | 'ready' | 'no-location' | 'error';
+
+export function WeatherPanel() {
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [status, setStatus] = useState<Status>('loading');
+  const [criteria, setCriteria] = useState<FlightCriteria>({ maxWindSpeed: 10, maxRainfall: 5 });
+
+  // 비행 판단 기준값 로드 (Settings에서 설정한 값 — 경고 임계값으로 사용)
   useEffect(() => {
-    fetch('/api/weather')
+    fetch('/api/flight-criteria')
       .then(res => res.json())
-      .then(data => {
-        if (data.data) {
-          setWeather(data.data);
-          setDraft(data.data);
-        }
-      })
+      .then(data => { if (data.data) setCriteria(data.data); })
       .catch(() => {});
   }, []);
 
-  const save = async () => {
-    try {
-      const res = await fetch('/api/weather', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(draft),
-      });
-      const data = await res.json();
-      if (data.data) {
-        setWeather(data.data);
-        setEditing(false);
-      }
-    } catch { /* ignore */ }
-  };
+  // 브라우저 위치 기반 날씨 로드
+  useEffect(() => {
+    let cancelled = false;
 
-  const rainfallWarning = weather.rainfall >= 5;
-  const windWarning = weather.windSpeed >= 10;
+    const fetchWeather = (lat: number, lon: number) => {
+      fetch(`/api/weather?lat=${lat}&lon=${lon}`)
+        .then(res => res.json())
+        .then(data => {
+          if (cancelled) return;
+          if (data.data && data.data.available) {
+            setWeather(data.data);
+            setStatus('ready');
+          } else {
+            setStatus('error');
+          }
+        })
+        .catch(() => { if (!cancelled) setStatus('error'); });
+    };
+
+    const requestLocation = () => {
+      if (!navigator.geolocation) {
+        setStatus('no-location');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => fetchWeather(pos.coords.latitude, pos.coords.longitude),
+        () => { if (!cancelled) setStatus('no-location'); },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
+      );
+    };
+
+    requestLocation();
+    // 10분마다 위치·날씨 갱신
+    const timer = setInterval(requestLocation, 10 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, []);
+
+  if (status === 'loading') {
+    return (
+      <div className="weather-panel">
+        <span className="weather-label">Weather</span>
+        <div className="weather-display"><span>…</span></div>
+      </div>
+    );
+  }
+
+  if (status === 'no-location') {
+    return (
+      <div className="weather-panel">
+        <span className="weather-label">Weather</span>
+        <div className="weather-display"><span>위치 권한 필요</span></div>
+      </div>
+    );
+  }
+
+  if (status === 'error' || !weather) {
+    return (
+      <div className="weather-panel">
+        <span className="weather-label">Weather</span>
+        <div className="weather-display"><span>날씨 정보 없음</span></div>
+      </div>
+    );
+  }
+
+  const rainfallWarning = weather.rainfall >= criteria.maxRainfall;
+  const windWarning = weather.windSpeed >= criteria.maxWindSpeed;
 
   return (
     <div className="weather-panel">
-      <span className="weather-label">Weather</span>
-      {editing ? (
-        <div className="weather-edit">
-          <label>
-            Rainfall
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              value={draft.rainfall}
-              onChange={e => setDraft({ ...draft, rainfall: parseFloat(e.target.value) || 0 })}
-            />
-            mm
-          </label>
-          <label>
-            Wind
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              value={draft.windSpeed}
-              onChange={e => setDraft({ ...draft, windSpeed: parseFloat(e.target.value) || 0 })}
-            />
-            m/s
-          </label>
-          <button className="weather-btn save" onClick={save}>Save</button>
-          <button className="weather-btn cancel" onClick={() => { setDraft(weather); setEditing(false); }}>Cancel</button>
-        </div>
-      ) : (
-        <div className="weather-display" onClick={() => setEditing(true)} title="Click to edit">
-          <span className={rainfallWarning ? 'warn' : ''}>Rain {weather.rainfall}mm</span>
-          <span className={windWarning ? 'warn' : ''}>Wind {weather.windSpeed}m/s</span>
-          {(rainfallWarning || windWarning) && <span className="flight-warn">Unsafe to fly</span>}
-        </div>
-      )}
+      <span className="weather-label">
+        Weather{weather.locationName ? ` · ${weather.locationName}` : ''}
+      </span>
+      <div className="weather-display">
+        <span className={rainfallWarning ? 'warn' : ''}>Rain {weather.rainfall}mm</span>
+        <span className={windWarning ? 'warn' : ''}>Wind {weather.windSpeed}m/s</span>
+        {(rainfallWarning || windWarning) && <span className="flight-warn">Unsafe to fly</span>}
+      </div>
     </div>
   );
 }
