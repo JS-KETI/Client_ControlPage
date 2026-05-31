@@ -9,6 +9,8 @@ export interface DeviceSummary {
   encodingProfile: string;
   battery: number | null;
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   missionId: string | null;
   missionStatus: string | null;
   publisherTxBps: number | null;

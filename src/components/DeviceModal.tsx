@@ -34,7 +34,7 @@ export function DeviceModal({ device, onClose }: Props) {
           <h3>Status</h3>
           <dl>
             <dt>Battery</dt><dd style={{ color: batteryColor }}>{device.battery != null ? `${device.battery}%` : '-'}</dd>
-            <dt>Location</dt><dd>{device.location ?? '-'}</dd>
+            <dt>GPS</dt><dd>{device.latitude != null && device.longitude != null ? `${device.latitude}, ${device.longitude}` : '-'}</dd>
             <dt>Mission</dt><dd>{device.missionId ?? '-'} ({device.missionStatus ?? '-'})</dd>
             <dt>Connected</dt><dd>{device.connectedAt ? new Date(device.connectedAt).toLocaleString() : '-'}</dd>
             <dt>Last seen</dt><dd>{device.lastSeenAt ? new Date(device.lastSeenAt).toLocaleString() : '-'}</dd>
