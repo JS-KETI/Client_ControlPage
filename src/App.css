@@ -795,17 +795,30 @@ body {
 
 .tool-step {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   font-size: 13px;
 }
 
 .tool-step .step-icon {
   width: 16px;
+  margin-top: 1px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
+  flex-shrink: 0;
+}
+
+.step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.step-summary {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .tool-step.success .step-icon { color: #22c55e; }

@@ -19,6 +19,7 @@ interface LlmJsonResponse {
 interface ToolStep {
   name: string;
   status: 'running' | 'success' | 'error';
+  summary?: string;
 }
 
 interface ChatMessage {
@@ -134,7 +135,12 @@ function ToolSteps({ steps }: { steps: ToolStep[] }) {
               '✗'
             )}
           </span>
-          <span className="step-label">{toolLabel(s.name)}</span>
+          <div className="step-text">
+            <span className="step-label">{toolLabel(s.name)}</span>
+            {s.summary && s.status !== 'running' && (
+              <span className="step-summary">{s.summary}</span>
+            )}
+          </div>
         </div>
       ))}
     </div>
@@ -215,12 +221,13 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
           const elapsed = performance.now() - (toolStartTimes[data.name] ?? performance.now());
           const remaining = MIN_STEP_MS - elapsed;
           const finalStatus: ToolStep['status'] = data.status === 'success' ? 'success' : 'error';
+          const summary = data.summary;
           const applyDone = () =>
             updateLastAssistant(m => ({
               ...m,
               steps: (m.steps || []).map(s =>
                 s.name === data.name && s.status === 'running'
-                  ? { ...s, status: finalStatus }
+                  ? { ...s, status: finalStatus, summary }
                   : s
               ),
             }));
