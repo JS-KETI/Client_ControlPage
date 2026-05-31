@@ -185,6 +185,8 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
     });
     if (!res.body) throw new Error('no stream');
 
+    const toolStartTimes: Record<string, number> = {};
+    const MIN_STEP_MS = 700; // 도구가 빨라도 진행 표시가 보이도록 최소 노출 시간
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
@@ -203,19 +205,27 @@ export function LlmSidebar({ isOpen, onClose }: Props) {
         const data = parsed.data as Record<string, string>;
 
         if (event === 'tool_start') {
+          toolStartTimes[data.name] = performance.now();
           updateLastAssistant(m => ({
             ...m,
             steps: [...(m.steps || []), { name: data.name, status: 'running' }],
           }));
         } else if (event === 'tool_done') {
-          updateLastAssistant(m => ({
-            ...m,
-            steps: (m.steps || []).map(s =>
-              s.name === data.name && s.status === 'running'
-                ? { ...s, status: data.status === 'success' ? 'success' : 'error' }
-                : s
-            ),
-          }));
+          // 시각적 최소 노출만 setTimeout으로 지연 — 메인 스트림은 블록하지 않음
+          const elapsed = performance.now() - (toolStartTimes[data.name] ?? performance.now());
+          const remaining = MIN_STEP_MS - elapsed;
+          const finalStatus: ToolStep['status'] = data.status === 'success' ? 'success' : 'error';
+          const applyDone = () =>
+            updateLastAssistant(m => ({
+              ...m,
+              steps: (m.steps || []).map(s =>
+                s.name === data.name && s.status === 'running'
+                  ? { ...s, status: finalStatus }
+                  : s
+              ),
+            }));
+          if (remaining > 0) setTimeout(applyDone, remaining);
+          else applyDone();
         } else if (event === 'final') {
           const reply = data.reply || '';
           const parsedReply = tryParseJson(reply);

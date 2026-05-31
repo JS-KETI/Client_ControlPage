@@ -42,6 +42,7 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
+        <img src="/ci_img4.jpg" className="app-logo" alt="KETI" />
         <h1>MoQ Control System</h1>
         <nav className="tab-bar">
           <button
