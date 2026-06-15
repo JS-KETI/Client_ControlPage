@@ -18,6 +18,10 @@ export interface DeviceSummary {
   lastSeenAt: string;
   relayUrl: string;
   broadcastPath: string;
+  // Bumped by the server only when the publisher hard-reconnects. Missing on
+  // older data → treat as 0. On increment the control page rebuilds the player
+  // so it doesn't stay frozen on the last frame.
+  streamRevision?: number;
 }
 
 export interface WsMessage<T = unknown> {
