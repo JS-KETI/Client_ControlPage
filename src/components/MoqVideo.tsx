@@ -7,8 +7,13 @@ const DEBUG = import.meta.env.DEV;
 // happen *without* a revision bump (the <moq-watch> subscription freezes on the
 // last frame and never resumes on its own).
 const WATCHDOG_POLL_MS = 1000;        // how often we sample playback progress
-const STALL_THRESHOLD_MS = 4000;      // no progress for this long → stalled (3–5s)
-const STARTUP_GRACE_MS = 3000;        // grace after a (re)mount before we can fire
+const STALL_THRESHOLD_MS = 4000;      // steady-state: no progress this long → stalled (3–5s)
+const STARTUP_GRACE_MS = 3000;        // hard floor after a (re)mount before we can fire at all
+// Initial-connect grace: the very first subscribe of a generation can legitimately take
+// several seconds (relay connect + first keyframe). Until playback has produced progress
+// *at least once*, we wait this much longer before the first remount — otherwise a merely
+// slow subscribe trips the steady-state stall timer and we tear the player down in a loop.
+const INITIAL_CONNECT_TIMEOUT_MS = 15000;
 const BACKOFF_STEPS_MS = [1000, 2000, 5000]; // remount backoff, then hold at last
 
 interface Props {
@@ -76,12 +81,19 @@ export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, device
     let lastVideoCurrentTime = -1;   // <video>.currentTime at last sample
     let lastBackendTs: number | null = null; // backend.video.timestamp at last sample
     let generationStart = 0;         // performance.now() when current gen mounted
+    // Has the CURRENT generation produced real playback progress at least once? Until
+    // then the watchdog uses the longer initial-connect timeout instead of the 4s stall
+    // window, so a slow first subscribe doesn't get torn down mid-connect.
+    let playbackStarted = false;
     let remountCount = 0;            // # of watchdog remounts → backoff index
     let watchdogPoll: ReturnType<typeof setInterval> | null = null;
     let pendingRemount: ReturnType<typeof setTimeout> | null = null;
     let disposed = false;            // effect cleanup ran → stop everything
 
-    const noteProgress = () => { lastProgressTs = performance.now(); };
+    const noteProgress = () => {
+      lastProgressTs = performance.now();
+      playbackStarted = true;
+    };
 
     // Builds a fresh <moq-watch> + <video> with the SAME relayUrl/broadcastPath.
     // Used for both the initial mount and every watchdog remount.
@@ -115,11 +127,15 @@ export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, device
 
       log('dom.appended', { jitter: 80 });
 
-      // Reset progress baseline + startup grace for this generation.
+      // Reset progress baseline + startup grace for this generation. playbackStarted
+      // stays false until the first real frame so the initial-connect timeout applies.
+      // (Assign lastProgressTs directly, NOT via noteProgress, so this baseline does
+      // not count as "playback started".)
       generationStart = performance.now();
       lastProgressTs = generationStart;
       lastVideoCurrentTime = -1;
       lastBackendTs = null;
+      playbackStarted = false;
 
       const mw = moqWatch as any;
 
@@ -258,24 +274,40 @@ export const MoqVideo = memo(function MoqVideo({ relayUrl, broadcastPath, device
       if (disposed || pendingRemount || !currentVideo) return;
       const now = performance.now();
 
-      // Startup grace: give the (re)mount time to establish before judging it.
+      // Hard startup floor: never judge a (re)mount before it has had a moment to attach.
       if (now - generationStart < STARTUP_GRACE_MS) return;
 
-      // <video>.currentTime advancing also counts as progress.
+      // <video>.currentTime advancing also counts as progress (sets playbackStarted).
       const ct = currentVideo.currentTime;
       if (ct > lastVideoCurrentTime + 0.01) {
         lastVideoCurrentTime = ct;
         noteProgress();
       }
 
-      const stalledFor = now - lastProgressTs;
-      if (stalledFor >= STALL_THRESHOLD_MS) {
-        const reason = currentVideo.error
-          ? `video-error-${currentVideo.error.code}`
-          : currentVideo.ended
-            ? 'ended'
-            : 'no-progress';
-        scheduleRemount(reason);
+      // A hard video error/ended is conclusive regardless of phase — remount now.
+      if (currentVideo.error) {
+        scheduleRemount(`video-error-${currentVideo.error.code}`);
+        return;
+      }
+      if (currentVideo.ended) {
+        scheduleRemount('ended');
+        return;
+      }
+
+      if (!playbackStarted) {
+        // Initial connect: this generation has never produced a frame. Allow the longer
+        // initial-connect timeout (measured from mount) before the first remount, so a
+        // merely slow subscribe isn't mistaken for a steady-state stall.
+        if (now - generationStart >= INITIAL_CONNECT_TIMEOUT_MS) {
+          scheduleRemount('initial-connect-timeout');
+        }
+        return;
+      }
+
+      // Steady state: playback has produced progress at least once. A short no-progress
+      // window means the stream froze on the last frame.
+      if (now - lastProgressTs >= STALL_THRESHOLD_MS) {
+        scheduleRemount('no-progress');
       }
     };
 
