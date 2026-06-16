@@ -21,11 +21,12 @@ export function DeviceCard({ device, index, onClick }: Props) {
       </div>
       <div className="card-video">
         {device.relayUrl && device.broadcastPath ? (
-          // key includes streamRevision so a publisher hard-reconnect (revision
-          // bump) fully remounts the player instead of staying frozen on the
-          // last frame. relayUrl/broadcastPath are unchanged.
+          // key includes streamRevision (hard reconnect) AND migrationRevision
+          // (session-preserving QUIC rebind) so EITHER bump fully remounts the
+          // player instead of staying frozen on the last frame. The watchdog
+          // remains as a no-progress fallback. relayUrl/broadcastPath unchanged.
           <MoqVideo
-            key={`${device.deviceId}-${device.streamRevision ?? 0}`}
+            key={`${device.deviceId}-${device.streamRevision ?? 0}-${device.migrationRevision ?? 0}`}
             relayUrl={device.relayUrl}
             broadcastPath={device.broadcastPath}
             deviceId={device.deviceId}

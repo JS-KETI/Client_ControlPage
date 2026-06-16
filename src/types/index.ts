@@ -22,6 +22,11 @@ export interface DeviceSummary {
   // older data → treat as 0. On increment the control page rebuilds the player
   // so it doesn't stay frozen on the last frame.
   streamRevision?: number;
+  // Bumped on a session-preserving QUIC path rebind success (Wi-Fi↔Cellular).
+  // Distinct from streamRevision (hard reconnect). The control page remounts the
+  // player when EITHER revision changes, so a seamless rebind recovers instantly
+  // instead of waiting for the stall watchdog (~13s). Missing → treat as 0.
+  migrationRevision?: number;
 }
 
 export interface WsMessage<T = unknown> {
