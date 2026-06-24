@@ -1,6 +1,6 @@
 import type { DeviceSummary } from '../types';
 import { getBatteryColor, formatBps } from '../utils/battery';
-import { formatNetworkType } from '../utils/network';
+import { networkBadge } from '../utils/network';
 import { MoqVideo } from './MoqVideo';
 
 interface Props {
@@ -11,14 +11,18 @@ interface Props {
 
 export function DeviceCard({ device, index, onClick }: Props) {
   const batteryColor = getBatteryColor(device.battery);
+  const net = networkBadge(device.networkType);
 
   return (
     <div className="device-card" onClick={() => onClick(device)}>
       <div className="card-header">
         <span className="device-label">#{index + 1} {device.deviceId}</span>
-        <span className="battery" style={{ color: batteryColor }}>
-          Battery {device.battery ?? '-'}%
-        </span>
+        <div className="card-header-right">
+          <span className="battery" style={{ color: batteryColor }}>
+            Battery {device.battery ?? '-'}%
+          </span>
+          <span className={`net-tag net-tag-${net.kind}`}>{net.label}</span>
+        </div>
       </div>
       <div className="card-video">
         {device.relayUrl && device.broadcastPath ? (
@@ -51,7 +55,6 @@ export function DeviceCard({ device, index, onClick }: Props) {
             ? `📍 ${device.latitude.toFixed(4)}, ${device.longitude.toFixed(4)}`
             : 'GPS 없음'}
         </span>
-        <span className="network">{formatNetworkType(device.networkType)}</span>
         <span className="status">{device.missionStatus === 'in_progress' ? 'On mission' : 'Idle'}</span>
       </div>
     </div>

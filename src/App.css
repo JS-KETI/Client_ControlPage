@@ -137,9 +137,45 @@ body {
 .card-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 8px 12px;
   font-size: 13px;
   background: rgba(0, 0, 0, 0.3);
+}
+
+.card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 네트워크 태그 (아이콘 없는 둥근 pill, 배터리 옆) */
+.net-tag {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  background: transparent;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+.net-tag-wifi {
+  color: #7dd3fc;            /* 하늘색 */
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+}
+.net-tag-cellular {
+  color: #bef264;            /* 연두색 */
+  border-color: #a3e635;
+  background: rgba(163, 230, 53, 0.15);
+}
+.net-tag-unknown {
+  color: var(--text-secondary);
+  border-color: var(--border);
+  background: transparent;
 }
 
 .device-label {
