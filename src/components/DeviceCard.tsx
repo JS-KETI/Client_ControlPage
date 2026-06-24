@@ -45,7 +45,11 @@ export function DeviceCard({ device, index, onClick }: Props) {
         </div>
       </div>
       <div className="card-footer">
-        <span className="location">{device.location ?? 'Location unknown'}</span>
+        <span className="location">
+          {device.latitude != null && device.longitude != null
+            ? `📍 ${device.latitude.toFixed(4)}, ${device.longitude.toFixed(4)}`
+            : 'GPS 없음'}
+        </span>
         <span className="status">{device.missionStatus === 'in_progress' ? 'On mission' : 'Idle'}</span>
       </div>
     </div>
