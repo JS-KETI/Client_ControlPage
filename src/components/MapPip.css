@@ -2,7 +2,7 @@
   position: fixed;
   bottom: 24px;
   left: 24px;                 /* 좌하단 — FAB(우하단)·사이드바(우측)와 겹치지 않음 */
-  width: 300px;
+  width: 430px;              /* JS 인라인 스타일(SIZES)로 프리셋 적용 */
   z-index: 75;
   display: flex;
   flex-direction: column;
@@ -17,6 +17,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 6px 10px;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border);
@@ -32,11 +33,48 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* 우측 컨트롤(크기 프리셋 + 접기) */
+.map-pip-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.map-pip-sizes {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.size-btn {
+  width: 20px;
+  height: 22px;
+  border: none;
+  border-right: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.size-btn:last-child {
+  border-right: none;
+}
+.size-btn:hover:not(.active) {
+  color: var(--text-primary);
+}
+.size-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
 .map-pip-toggle {
   flex: none;
   width: 22px;
   height: 22px;
-  margin-left: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -55,7 +93,7 @@
 }
 .map-pip-body {
   width: 100%;
-  height: 220px;
+  height: 300px;             /* JS 인라인 스타일(SIZES)로 프리셋 적용 */
 }
 .map-pip-leaflet {
   width: 100%;
@@ -63,10 +101,50 @@
   background: var(--bg-secondary);
 }
 
-/* divIcon 기본 흰 박스 제거 */
+/* 드론 마커 */
 .drone-marker {
   background: transparent;
   border: none;
+}
+/* 새 기기 강조: 앰버 펄스 링 */
+.drone-pulse {
+  display: none;
+}
+.drone-marker.highlighted .drone-pulse {
+  display: block;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border-radius: 50%;
+  border: 2px solid #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+  pointer-events: none;
+  animation: drone-pulse 1.1s ease-out infinite;
+}
+@keyframes drone-pulse {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* 기기 코드 블럭 태그 (permanent tooltip) */
+.map-pip .leaflet-tooltip.device-tag {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+/* 블럭 태그는 말풍선 화살표 제거 */
+.map-pip .leaflet-tooltip.device-tag::before {
+  display: none;
 }
 
 /* Leaflet 팝업 다크 테마 */
