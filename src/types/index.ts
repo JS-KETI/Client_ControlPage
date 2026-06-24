@@ -11,6 +11,7 @@ export interface DeviceSummary {
   location: string | null;
   latitude: number | null;
   longitude: number | null;
+  networkType: string | null;
   missionId: string | null;
   missionStatus: string | null;
   publisherTxBps: number | null;

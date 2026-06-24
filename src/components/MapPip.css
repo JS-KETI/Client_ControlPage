@@ -1,0 +1,104 @@
+.map-pip {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;                 /* 좌하단 — FAB(우하단)·사이드바(우측)와 겹치지 않음 */
+  width: 300px;
+  z-index: 75;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  font-family: inherit;
+}
+.map-pip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+.map-pip.collapsed .map-pip-header {
+  border-bottom: none;
+}
+.map-pip-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.map-pip-toggle {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.map-pip-toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+.map-pip-body {
+  width: 100%;
+  height: 220px;
+}
+.map-pip-leaflet {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-secondary);
+}
+
+/* divIcon 기본 흰 박스 제거 */
+.drone-marker {
+  background: transparent;
+  border: none;
+}
+
+/* Leaflet 팝업 다크 테마 */
+.map-pip .leaflet-popup-content-wrapper {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.map-pip .leaflet-popup-content {
+  margin: 8px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.map-pip .leaflet-popup-tip {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+.map-pip .leaflet-popup-close-button {
+  color: var(--text-secondary);
+}
+.map-pip .leaflet-container a.leaflet-popup-close-button:hover {
+  color: var(--text-primary);
+}
+
+/* 어트리뷰션(© Esri) — 작고 어둡게 */
+.map-pip .leaflet-control-attribution {
+  background: rgba(30, 41, 59, 0.8);
+  color: var(--text-secondary);
+  font-size: 9px;
+  padding: 1px 5px;
+}
+.map-pip .leaflet-control-attribution a {
+  color: var(--accent);
+}

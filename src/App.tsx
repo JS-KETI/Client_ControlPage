@@ -7,6 +7,7 @@ import { DeviceModal } from './components/DeviceModal';
 import { LlmSidebar } from './components/LlmSidebar';
 import { WeatherPanel } from './components/WeatherPanel';
 import { SettingsPanel } from './components/SettingsPanel';
+import { MapPip } from './components/MapPip';
 import type { DeviceSummary } from './types';
 import '@moq/watch/element';
 import './App.css';
@@ -82,6 +83,8 @@ function App() {
       {selectedDevice && (
         <DeviceModal device={selectedDevice} onClose={handlePanelClose} />
       )}
+
+      {activeTab === 'monitoring' && <MapPip devices={deviceList} />}
 
       <button className="fab" onClick={() => setSidebarOpen(true)}>
         AI

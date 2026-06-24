@@ -1,5 +1,6 @@
 import type { DeviceSummary } from '../types';
 import { getBatteryColor, formatBps } from '../utils/battery';
+import { formatNetworkType } from '../utils/network';
 
 interface Props {
   device: DeviceSummary;
@@ -35,6 +36,7 @@ export function DeviceModal({ device, onClose }: Props) {
           <dl>
             <dt>Battery</dt><dd style={{ color: batteryColor }}>{device.battery != null ? `${device.battery}%` : '-'}</dd>
             <dt>GPS</dt><dd>{device.latitude != null && device.longitude != null ? `${device.latitude}, ${device.longitude}` : '-'}</dd>
+            <dt>Network</dt><dd>{formatNetworkType(device.networkType)}</dd>
             <dt>Mission</dt><dd>{device.missionId ?? '-'} ({device.missionStatus ?? '-'})</dd>
             <dt>Connected</dt><dd>{device.connectedAt ? new Date(device.connectedAt).toLocaleString() : '-'}</dd>
             <dt>Last seen</dt><dd>{device.lastSeenAt ? new Date(device.lastSeenAt).toLocaleString() : '-'}</dd>

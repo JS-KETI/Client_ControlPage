@@ -1,5 +1,6 @@
 import type { DeviceSummary } from '../types';
 import { getBatteryColor, formatBps } from '../utils/battery';
+import { formatNetworkType } from '../utils/network';
 import { MoqVideo } from './MoqVideo';
 
 interface Props {
@@ -50,6 +51,7 @@ export function DeviceCard({ device, index, onClick }: Props) {
             ? `📍 ${device.latitude.toFixed(4)}, ${device.longitude.toFixed(4)}`
             : 'GPS 없음'}
         </span>
+        <span className="network">{formatNetworkType(device.networkType)}</span>
         <span className="status">{device.missionStatus === 'in_progress' ? 'On mission' : 'Idle'}</span>
       </div>
     </div>
