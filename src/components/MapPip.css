@@ -1,7 +1,7 @@
 .map-pip {
   position: fixed;
   bottom: 24px;
-  left: 24px;                 /* 좌하단 — FAB(우하단)·사이드바(우측)와 겹치지 않음 */
+  right: 24px;                /* 우하단 — AI 버튼(우상단)과 분리 */
   width: 430px;              /* JS 인라인 스타일(SIZES)로 프리셋 적용 */
   z-index: 75;
   display: flex;
@@ -12,7 +12,14 @@
   overflow: hidden;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
   font-family: inherit;
+  transition: right 0.28s ease;
 }
+
+/* 채팅 사이드바(380px)가 열리면 PiP를 그 너비만큼 왼쪽으로 밀어 가리지 않게 한다 */
+.map-pip.shifted {
+  right: 404px;
+}
+
 .map-pip-header {
   display: flex;
   align-items: center;

@@ -84,7 +84,7 @@ function App() {
         <DeviceModal device={selectedDevice} onClose={handlePanelClose} />
       )}
 
-      {activeTab === 'monitoring' && <MapPip devices={deviceList} />}
+      {activeTab === 'monitoring' && <MapPip devices={deviceList} sidebarOpen={sidebarOpen} />}
 
       <button className="fab" onClick={() => setSidebarOpen(true)}>
         AI

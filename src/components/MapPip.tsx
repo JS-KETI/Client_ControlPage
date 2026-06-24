@@ -105,9 +105,10 @@ function MapEffects({
 
 interface Props {
   devices: DeviceSummary[];
+  sidebarOpen?: boolean;
 }
 
-export function MapPip({ devices }: Props) {
+export function MapPip({ devices, sidebarOpen = false }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [size, setSize] = useState<SizeKey>('md');
   const [highlighted, setHighlighted] = useState<Set<string>>(new Set());
@@ -162,7 +163,10 @@ export function MapPip({ devices }: Props) {
   const firstFix = located.length > 0 ? located[0].position : null;
 
   return (
-    <div className={`map-pip ${collapsed ? 'collapsed' : ''}`} style={{ width: SIZES[size].w }}>
+    <div
+      className={`map-pip ${collapsed ? 'collapsed' : ''} ${sidebarOpen ? 'shifted' : ''}`}
+      style={{ width: SIZES[size].w }}
+    >
       <div className="map-pip-header">
         <span className="map-pip-title">Satellite · {located.length} located</span>
         <div className="map-pip-controls">

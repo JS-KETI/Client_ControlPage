@@ -317,7 +317,7 @@ body {
 
 .fab {
   position: fixed;
-  bottom: 24px;
+  top: 72px;
   right: 24px;
   width: 56px;
   height: 56px;
