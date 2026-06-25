@@ -62,6 +62,9 @@ function App() {
         </nav>
         <WeatherPanel />
         <div className="device-count">Connected: {deviceList.length}</div>
+        <button className="header-ai-btn" onClick={() => setSidebarOpen(true)}>
+          AI
+        </button>
       </header>
 
       <main className="app-main">
@@ -85,10 +88,6 @@ function App() {
       )}
 
       {activeTab === 'monitoring' && <MapPip devices={deviceList} sidebarOpen={sidebarOpen} />}
-
-      <button className="fab" onClick={() => setSidebarOpen(true)}>
-        AI
-      </button>
 
       <LlmSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
     </div>
